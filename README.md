@@ -1,56 +1,90 @@
-# Welcome to your Expo app 👋
+# 💸 Expense Tracker
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A premium, CRED-inspired expense/income tracking app built with React Native and Expo.
 
-## Get started
+## Features
 
-1. Install dependencies
+- 🌙 Dark theme with CRED-style fintech aesthetic
+- ➕ Add, edit, and delete expense/income entries
+- 📅 Calendar-based date filtering
+- 💰 Balance card with income/expense breakdown
+- 🇮🇳 Indian Rupee formatting (lakh/crore grouping)
+- 💾 Local SQLite persistence (data survives app restart)
+- ✨ Smooth animations and micro-interactions
 
-   ```bash
-   npm install
-   ```
+## Tech Stack
 
-2. Start the app
+| Layer | Technology |
+|:---|:---|
+| Framework | React Native (Expo SDK 57) |
+| Language | TypeScript |
+| Navigation | Expo Router |
+| State | Zustand |
+| Database | expo-sqlite |
+| Calendar | react-native-calendars |
+| Icons | lucide-react-native |
+| Animations | react-native-reanimated |
+| Fonts | Poppins + Inter (via expo-font) |
 
-   ```bash
-   npx expo start
-   ```
+## Getting Started
 
-In the output, you'll find options to open the app in a
+### Prerequisites
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+- [Node.js](https://nodejs.org/) (v18+)
+- [Expo Go](https://expo.dev/go) app on your Android device (or an Android emulator)
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+### Installation
 
 ```bash
-npm run reset-project
+# Install dependencies
+npm install
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+### Running the App
 
-### Other setup steps
+```bash
+# Start the development server
+npx expo start
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+# Or run directly on Android
+npm run android
+```
 
-## Learn more
+Then scan the QR code with Expo Go on your Android device, or press `a` to open in an Android emulator.
 
-To learn more about developing your project with Expo, look at the following resources:
+## Project Structure
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+```
+src/
+├── app/                    # Expo Router screens
+│   ├── _layout.tsx         # Root layout (fonts, navigation)
+│   ├── index.tsx           # Home screen
+│   └── add-entry.tsx       # Add/Edit entry screen
+├── components/             # Reusable UI components
+│   ├── BalanceCard.tsx     # Hero balance summary card
+│   ├── CalendarModal.tsx   # Date picker modal
+│   ├── EmptyState.tsx      # Empty section placeholder
+│   ├── EntryCard.tsx       # Entry list item card
+│   ├── FAB.tsx             # Floating action button
+│   ├── SectionHeader.tsx   # Section divider with badge
+│   └── TypeToggle.tsx      # Expense/Income toggle
+├── db/                     # Database layer
+│   └── database.ts         # SQLite CRUD operations
+├── store/                  # State management
+│   └── store.ts            # Zustand store
+├── theme/                  # Design system
+│   ├── theme.ts            # Colors, typography, spacing
+│   └── fonts.ts            # Font loading utility
+├── types/                  # TypeScript types
+│   └── types.ts            # Entry and form data types
+└── utils/                  # Utilities
+    └── utils.ts            # Formatting and helpers
+```
 
-## Join the community
+## Usage
 
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+1. **Home Screen**: Shows today's entries by default with a balance summary
+2. **Add Entry**: Tap the `+` button to add a new expense or income
+3. **Edit Entry**: Tap any entry card to edit or delete it
+4. **Filter by Date**: Tap the calendar icon to select a different date
+5. **Pull to Refresh**: Pull down on the home screen to refresh entries
