@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Expense Tracker",
+    "name": "Expense",
     "slug": "expense",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -11,12 +11,6 @@
       "icon": "./assets/expo.icon"
     },
     "android": {
-      "adaptiveIcon": {
-        "backgroundColor": "#0B0B0F",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
-      },
       "predictiveBackGestureEnabled": false,
       "package": "com.anonymous.expense"
     },

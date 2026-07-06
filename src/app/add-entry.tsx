@@ -2,7 +2,7 @@
  * Add/Edit Entry Screen - Form for creating or editing expense/income entries.
  * Supports type toggle, date picker, validation, and delete (edit mode).
  */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, memo } from 'react';
 import {
   StyleSheet,
   Text,
@@ -13,6 +13,8 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  type TextInputProps,
+  type ViewStyle,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -24,6 +26,83 @@ import { getTodayISO } from '@/utils/utils';
 import { getEntryById } from '@/db/database';
 import TypeToggle from '@/components/TypeToggle';
 import type { EntryType, Entry } from '@/types/types';
+
+/**
+ * Self-contained input wrapper that manages its own focus state.
+ * This prevents parent re-renders on focus/blur which causes
+ * infinite focus cycling on Android.
+ */
+interface FocusableInputProps extends TextInputProps {
+  containerStyle?: ViewStyle;
+  hasError?: boolean;
+  prefix?: React.ReactNode;
+}
+
+const FocusableInput = memo(function FocusableInput({
+  containerStyle,
+  hasError,
+  prefix,
+  style: inputStyle,
+  onFocus,
+  onBlur,
+  ...textInputProps
+}: FocusableInputProps) {
+  const [isFocused, setIsFocused] = useState(false);
+
+  const handleFocus = useCallback((e: any) => {
+    setIsFocused(true);
+    onFocus?.(e);
+  }, [onFocus]);
+
+  const handleBlur = useCallback((e: any) => {
+    setIsFocused(false);
+    onBlur?.(e);
+  }, [onBlur]);
+
+  return (
+    <View
+      style={[
+        focusStyles.container,
+        containerStyle,
+        isFocused && focusStyles.focused,
+        hasError && focusStyles.error,
+      ]}
+    >
+      {prefix}
+      <TextInput
+        style={[focusStyles.input, inputStyle]}
+        selectionColor={Colors.fabGradientStart}
+        cursorColor={Colors.fabGradientStart}
+        placeholderTextColor={Colors.textMuted}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+        {...textInputProps}
+      />
+    </View>
+  );
+});
+
+const focusStyles = StyleSheet.create({
+  container: {
+    backgroundColor: Colors.inputBackground,
+    borderRadius: Radii.lg,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    paddingHorizontal: Spacing.lg,
+  },
+  focused: {
+    borderColor: Colors.fabGradientStart,
+  },
+  error: {
+    borderColor: Colors.expenseRed,
+  },
+  input: {
+    fontFamily: FontFamily.body,
+    fontSize: FontSize.md,
+    color: Colors.textPrimary,
+    paddingVertical: Spacing.lg,
+  },
+});
 
 export default function AddEntryScreen() {
   const router = useRouter();
@@ -43,8 +122,7 @@ export default function AddEntryScreen() {
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Focus state for input styling
-  const [focusedField, setFocusedField] = useState<string | null>(null);
+
 
   // Validation errors
   const [errors, setErrors] = useState<{ name?: string; amount?: string }>({});
@@ -198,23 +276,12 @@ export default function AddEntryScreen() {
             style={styles.fieldGroup}
           >
             <Text style={styles.label}>Date</Text>
-            <View style={[
-              styles.inputContainer,
-              focusedField === 'date' && styles.inputFocused,
-            ]}>
-              <TextInput
-                style={styles.input}
-                value={date}
-                onChangeText={setDate}
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor={Colors.textMuted}
-                keyboardType="default"
-                selectionColor={Colors.fabGradientStart}
-                cursorColor={Colors.fabGradientStart}
-                onFocus={() => setFocusedField('date')}
-                onBlur={() => setFocusedField(null)}
-              />
-            </View>
+            <FocusableInput
+              value={date}
+              onChangeText={setDate}
+              placeholder="YYYY-MM-DD"
+              keyboardType="default"
+            />
           </Animated.View>
 
           {/* Name Field */}
@@ -223,31 +290,18 @@ export default function AddEntryScreen() {
             style={styles.fieldGroup}
           >
             <Text style={styles.label}>Name</Text>
-            <View
-              style={[
-                styles.inputContainer,
-                focusedField === 'name' && styles.inputFocused,
-                errors.name ? styles.inputError : null,
-              ]}
-            >
-              <TextInput
-                style={styles.input}
-                value={name}
-                onChangeText={(text) => {
-                  setName(text);
-                  if (errors.name) setErrors((prev) => ({ ...prev, name: undefined }));
-                }}
-                placeholder={
-                  type === 'expense' ? 'e.g. Groceries' : 'e.g. Salary'
-                }
-                placeholderTextColor={Colors.textMuted}
-                maxLength={100}
-                selectionColor={Colors.fabGradientStart}
-                cursorColor={Colors.fabGradientStart}
-                onFocus={() => setFocusedField('name')}
-                onBlur={() => setFocusedField(null)}
-              />
-            </View>
+            <FocusableInput
+              value={name}
+              onChangeText={(text) => {
+                setName(text);
+                if (errors.name) setErrors((prev) => ({ ...prev, name: undefined }));
+              }}
+              placeholder={
+                type === 'expense' ? 'e.g. Groceries' : 'e.g. Salary'
+              }
+              maxLength={100}
+              hasError={Boolean(errors.name)}
+            />
             {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
           </Animated.View>
 
@@ -257,34 +311,21 @@ export default function AddEntryScreen() {
             style={styles.fieldGroup}
           >
             <Text style={styles.label}>Amount</Text>
-            <View
-              style={[
-                styles.inputContainer,
-                styles.amountContainer,
-                focusedField === 'amount' && styles.inputFocused,
-                errors.amount ? styles.inputError : null,
-              ]}
-            >
-              <Text style={[styles.currencySymbol, focusedField === 'amount' && { color: Colors.fabGradientStart }]}>₹</Text>
-              <TextInput
-                style={[styles.input, styles.amountInput]}
-                value={amount}
-                onChangeText={(text) => {
-                  // Only allow numbers and decimal point
-                  const cleaned = text.replace(/[^0-9.]/g, '');
-                  setAmount(cleaned);
-                  if (errors.amount)
-                    setErrors((prev) => ({ ...prev, amount: undefined }));
-                }}
-                placeholder="0"
-                placeholderTextColor={Colors.textMuted}
-                keyboardType="decimal-pad"
-                selectionColor={Colors.fabGradientStart}
-                cursorColor={Colors.fabGradientStart}
-                onFocus={() => setFocusedField('amount')}
-                onBlur={() => setFocusedField(null)}
-              />
-            </View>
+            <FocusableInput
+              containerStyle={styles.amountContainer}
+              prefix={<Text style={styles.currencySymbol}>₹</Text>}
+              style={styles.amountInput}
+              value={amount}
+              onChangeText={(text) => {
+                const cleaned = text.replace(/[^0-9.]/g, '');
+                setAmount(cleaned);
+                if (errors.amount)
+                  setErrors((prev) => ({ ...prev, amount: undefined }));
+              }}
+              placeholder="0"
+              keyboardType="decimal-pad"
+              hasError={Boolean(errors.amount)}
+            />
             {errors.amount && (
               <Text style={styles.errorText}>{errors.amount}</Text>
             )}
@@ -296,27 +337,17 @@ export default function AddEntryScreen() {
             style={styles.fieldGroup}
           >
             <Text style={styles.label}>Comment (optional)</Text>
-            <View style={[
-              styles.inputContainer,
-              styles.commentContainer,
-              focusedField === 'comment' && styles.inputFocused,
-            ]}>
-              <TextInput
-                style={[styles.input, styles.commentInput]}
-                value={comment}
-                onChangeText={setComment}
-                placeholder="Add a note..."
-                placeholderTextColor={Colors.textMuted}
-                multiline
-                numberOfLines={3}
-                textAlignVertical="top"
-                maxLength={500}
-                selectionColor={Colors.fabGradientStart}
-                cursorColor={Colors.fabGradientStart}
-                onFocus={() => setFocusedField('comment')}
-                onBlur={() => setFocusedField(null)}
-              />
-            </View>
+            <FocusableInput
+              containerStyle={styles.commentContainer}
+              style={styles.commentInput}
+              value={comment}
+              onChangeText={setComment}
+              placeholder="Add a note..."
+              multiline
+              numberOfLines={3}
+              textAlignVertical="top"
+              maxLength={500}
+            />
           </Animated.View>
 
           {/* Status Checkbox */}
@@ -439,32 +470,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.8,
   },
-  inputContainer: {
-    backgroundColor: Colors.inputBackground,
-    borderRadius: Radii.lg,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    paddingHorizontal: Spacing.lg,
-  },
-  inputFocused: {
-    borderColor: Colors.fabGradientStart,
-    borderWidth: 1.5,
-    shadowColor: Colors.fabGradientStart,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  inputError: {
-    borderColor: Colors.expenseRed,
-  },
-  input: {
-    fontFamily: FontFamily.body,
-    fontSize: FontSize.md,
-    color: Colors.textPrimary,
-    paddingVertical: Spacing.lg,
-    outlineStyle: 'none' as any,
-  },
+
   amountContainer: {
     flexDirection: 'row',
     alignItems: 'center',
